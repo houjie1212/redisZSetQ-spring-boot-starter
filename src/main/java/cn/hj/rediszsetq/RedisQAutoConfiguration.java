@@ -1,7 +1,7 @@
 package cn.hj.rediszsetq;
 
 import cn.hj.rediszsetq.consumer.MessageListenerContainer;
-import cn.hj.rediszsetq.persistence.RedisQOps;
+import cn.hj.rediszsetq.persistence.RedisZSetQOps;
 import cn.hj.rediszsetq.producer.MessageProducer;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -46,13 +46,13 @@ public class RedisQAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(RedisQOps.class)
-    public RedisQOps redisQOps(LettuceConnectionFactory connectionFactory) {
-        return new RedisQOps(redisTemplate(connectionFactory));
+    @ConditionalOnMissingBean(RedisZSetQOps.class)
+    public RedisZSetQOps redisQOps(LettuceConnectionFactory connectionFactory) {
+        return new RedisZSetQOps(redisTemplate(connectionFactory));
     }
 
     @Bean
-    public MessageProducer messageProducer(RedisQOps redisQOps) {
-        return new MessageProducer(redisQOps);
+    public MessageProducer messageProducer(RedisZSetQOps redisZSetQOps) {
+        return new MessageProducer(redisZSetQOps);
     }
 }

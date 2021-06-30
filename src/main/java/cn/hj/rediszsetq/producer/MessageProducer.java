@@ -1,7 +1,7 @@
 package cn.hj.rediszsetq.producer;
 
 import cn.hj.rediszsetq.model.Message;
-import cn.hj.rediszsetq.persistence.RedisQOps;
+import cn.hj.rediszsetq.persistence.RedisZSetQOps;
 import org.springframework.stereotype.Component;
 
 import java.util.Calendar;
@@ -13,16 +13,16 @@ public class MessageProducer {
     private final int defaultPriority = 0;
     private final int defaultExpire = 30;
 
-    private final RedisQOps redisQOps;
+    private final RedisZSetQOps redisZSetQOps;
 
-    public MessageProducer(RedisQOps redisQOps) {
-        this.redisQOps = redisQOps;
+    public MessageProducer(RedisZSetQOps redisZSetQOps) {
+        this.redisZSetQOps = redisZSetQOps;
     }
 
     public <T> void sendMessage(String queueName, T payload, int priority, int expire) {
         Message<T> message = Message.create(UUID.randomUUID().toString(), payload);
         message.setCreation(Calendar.getInstance());
-        redisQOps.enqueue(queueName, message, priority, expire);
+        redisZSetQOps.enqueue(queueName, message, priority, expire);
     }
 
     public <T> void sendMessage(String queueName, T payload) {

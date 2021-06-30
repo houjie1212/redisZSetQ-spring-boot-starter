@@ -9,11 +9,11 @@ import java.util.Collections;
 import java.util.List;
 
 @Component
-public class RedisQOps {
+public class RedisZSetQOps {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    public RedisQOps(RedisTemplate<String, Object> redisTemplate) {
+    public RedisZSetQOps(RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 

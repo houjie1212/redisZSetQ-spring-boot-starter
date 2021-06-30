@@ -1,7 +1,7 @@
 package cn.hj.rediszsetq.consumer;
 
 import cn.hj.rediszsetq.model.Message;
-import cn.hj.rediszsetq.persistence.RedisQOps;
+import cn.hj.rediszsetq.persistence.RedisZSetQOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +13,7 @@ public class MessageConsumer<T> {
     private static final Logger log = LoggerFactory.getLogger(MessageConsumer.class);
 
     @Autowired
-    private RedisQOps redisQOps;
+    private RedisZSetQOps redisZSetQOps;
 
     private String queueName;
     private MessageListener<T> messageListener;
@@ -25,7 +25,7 @@ public class MessageConsumer<T> {
     public void startConsumer() {
 
         start(queueName, () -> {
-            Message<T> messageResult = redisQOps.dequeue(queueName, Message.class);
+            Message<T> messageResult = redisZSetQOps.dequeue(queueName, Message.class);
             try {
                 if (messageResult == null) {
                     TimeUnit.SECONDS.sleep(1);
