@@ -20,7 +20,7 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
-@ConditionalOnProperty(prefix = "redisQ", value = "enabled", havingValue = "true")
+@ConditionalOnProperty(prefix = "redisZSetQ", value = "enabled", havingValue = "true")
 @Import(MessageListenerContainer.class)
 public class RedisQAutoConfiguration {
 
