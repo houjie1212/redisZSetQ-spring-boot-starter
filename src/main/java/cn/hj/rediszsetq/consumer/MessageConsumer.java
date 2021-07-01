@@ -1,48 +1,32 @@
 package cn.hj.rediszsetq.consumer;
 
-import cn.hj.rediszsetq.model.Message;
-import cn.hj.rediszsetq.persistence.RedisZSetQOps;
+import cn.hj.rediszsetq.consumer.strategy.ThreadStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.util.concurrent.TimeUnit;
+import org.springframework.context.ApplicationContext;
 
 public class MessageConsumer<T> {
 
     private static final Logger log = LoggerFactory.getLogger(MessageConsumer.class);
 
-    @Autowired
-    private RedisZSetQOps redisZSetQOps;
+    private final ApplicationContext applicationContext;
 
     private String queueName;
     private MessageListener<T> messageListener;
 
+    private ThreadStrategy threadStrategy;
+
+    public MessageConsumer(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+    }
+
     public void init() {
+        applicationContext.getAutowireCapableBeanFactory().autowireBean(threadStrategy);
         startConsumer();
     }
 
     public void startConsumer() {
-
-        start(queueName, () -> {
-            Message<T> messageResult = redisZSetQOps.dequeue(queueName, Message.class);
-            try {
-                if (messageResult == null) {
-                    TimeUnit.SECONDS.sleep(1);
-                } else {
-                    messageListener.onMessage(messageResult.getPayload());
-                }
-            } catch (InterruptedException e) {
-                log.error(e.getMessage(), e);
-            }
-        });
-
-    }
-
-    public void start(String queueName, Runnable callback) {
-        DequeueThread dequeueThread = new DequeueThread(callback);
-        dequeueThread.setName(String.format("redisq-consumer[%s]", queueName));
-        dequeueThread.start();
+        threadStrategy.start(queueName, messageListener);
     }
 
     public MessageConsumer setQueueName(String queueName) {
@@ -50,8 +34,13 @@ public class MessageConsumer<T> {
         return this;
     }
 
-    public MessageConsumer setMessageListener(MessageListener messageListener) {
+    public MessageConsumer<T> setMessageListener(MessageListener<T> messageListener) {
         this.messageListener = messageListener;
+        return this;
+    }
+
+    public MessageConsumer<T> setThreadStrategy(ThreadStrategy threadStrategy) {
+        this.threadStrategy = threadStrategy;
         return this;
     }
 }

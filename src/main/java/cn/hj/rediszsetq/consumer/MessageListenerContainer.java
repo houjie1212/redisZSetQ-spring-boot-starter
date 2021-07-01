@@ -1,5 +1,7 @@
 package cn.hj.rediszsetq.consumer;
 
+import cn.hj.rediszsetq.consumer.strategy.MultiThreadStrategy;
+import cn.hj.rediszsetq.consumer.strategy.SingleThreadStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
@@ -12,6 +14,7 @@ import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -25,21 +28,40 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
     public void start() {
         Map<String, MessageListener> messageListeners = applicationContext.getBeansOfType(MessageListener.class);
         messageListeners.forEach((k, v) -> {
-            ParameterizedType pt = (ParameterizedType) v.getClass().getGenericInterfaces()[0];
+            ParameterizedType pt = (ParameterizedType) v.getClass().getGenericSuperclass();
             Class<?> cls = (Class) pt.getActualTypeArguments()[0];
+
             Method onMessage = ReflectionUtils.findMethod(v.getClass(), "onMessage", cls);
-            RedisZSetListener redisZSetListener = AnnotationUtils.findAnnotation(onMessage, RedisZSetListener.class);
-            if (redisZSetListener == null) {
-                log.warn("[{}]的方法没有添加RedisZSetListener注解，不会启动监听器", k);
-                return;
+            if (onMessage != null) {
+                RedisZSetListener onMessageAnnotation = AnnotationUtils.findAnnotation(onMessage, RedisZSetListener.class);
+                if (onMessageAnnotation == null) {
+                    log.warn("[{}]的方法onMessage没有添加RedisZSetListener注解，不会启动监听器", k);
+                } else {
+                    MessageConsumer messageConsumer = new MessageConsumer(applicationContext);
+                    applicationContext.getAutowireCapableBeanFactory().autowireBean(messageConsumer);
+                    messageConsumer.setMessageListener(v)
+                            .setQueueName(onMessageAnnotation.value())
+                            .setThreadStrategy(new SingleThreadStrategy(onMessageAnnotation.concurrency()))
+                            .init();
+                    log.info("启动消息监听器[{}].onMessage(T)，消费队列[{}]", k, onMessageAnnotation.value());
+                }
             }
 
-            MessageConsumer messageConsumer = new MessageConsumer();
-            applicationContext.getAutowireCapableBeanFactory().autowireBean(messageConsumer);
-            messageConsumer.setMessageListener(v);
-            messageConsumer.setQueueName(redisZSetListener.value());
-            messageConsumer.init();
-            log.info("启动消息监听器[{}]，消费队列[{}]", k, redisZSetListener.value());
+            Method onMessageList = ReflectionUtils.findMethod(v.getClass(), "onMessage", List.class);
+            if (onMessageList != null) {
+                RedisZSetListener onMessagesAnnotation = AnnotationUtils.findAnnotation(onMessageList, RedisZSetListener.class);
+                if (onMessagesAnnotation == null) {
+                    log.warn("[{}]的方法onMessage没有添加RedisZSetListener注解，不会启动监听器", k);
+                } else {
+                    MessageConsumer messageConsumer = new MessageConsumer(applicationContext);
+                    applicationContext.getAutowireCapableBeanFactory().autowireBean(messageConsumer);
+                    messageConsumer.setMessageListener(v)
+                            .setQueueName(onMessagesAnnotation.value())
+                            .setThreadStrategy(new MultiThreadStrategy(onMessagesAnnotation.concurrency(), onMessagesAnnotation.fetchCount()))
+                            .init();
+                    log.info("启动消息监听器[{}].onMessage(List<T>)，消费队列[{}]", k, onMessagesAnnotation.value());
+                }
+            }
         });
     }
 
