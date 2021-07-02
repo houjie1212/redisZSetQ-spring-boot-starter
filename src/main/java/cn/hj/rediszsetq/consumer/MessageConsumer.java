@@ -1,5 +1,6 @@
 package cn.hj.rediszsetq.consumer;
 
+import cn.hj.rediszsetq.consumer.strategy.SingleThreadStrategy;
 import cn.hj.rediszsetq.consumer.strategy.ThreadStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,9 @@ public class MessageConsumer<T> {
     }
 
     public void startConsumer() {
+        if (threadStrategy == null) {
+            threadStrategy = new SingleThreadStrategy(1);
+        }
         threadStrategy.start(queueName, messageListener);
     }
 
