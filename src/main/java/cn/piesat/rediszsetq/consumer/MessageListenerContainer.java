@@ -67,8 +67,11 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
                 Duration duration = Duration.ofMillis(new Date().getTime() - msr.getConsumerStartTime().getTime());
                 if (duration.getSeconds() > 60) {
                     log.info("检测到队列[{}]的消息{}执行超时，重新入队", msr.getQueueName(), msr.getPayload());
-                    redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, msr);
-                    messageProducer.sendMessage(msr.setRetryCount(msr.getRetryCount() + 1));
+                    Long remove = redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, msr);
+                    if (remove != null && remove > 0) {
+                        messageProducer.sendMessage(msr.setRetryCount(msr.getRetryCount() + 1));
+                    }
+
                 }
             });
         });
