@@ -47,6 +47,8 @@ public void produce() {
 ```java
 import MessageListenerAdapter;
 import RedisZSetListener;
+import cn.piesat.rediszsetq.consumer.Consumer;
+import cn.piesat.rediszsetq.model.Message;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -54,14 +56,16 @@ public class StringMessageListener extends MessageListenerAdapter<String> {
 
     @Override
     @RedisZSetListener("queueName")
-    public void onMessage(String message) {
+    public void onMessage(Message<String> message, Consumer consumer) {
         System.out.println(message);
+        consumer.ack(message);
     }
 
     @Override
     @RedisZSetListener(value = "queueName", concurrency = 2, fetchCount = 2)
-    public void onMessage(List<String> messages) {
+    public void onMessage(List<Message<String>> messages, Consumer consumer) {
         messages.forEach(message -> System.out.println(message));
+        consumer.ack(messages);
     }
 }
 ```
