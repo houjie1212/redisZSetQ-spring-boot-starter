@@ -3,7 +3,6 @@ package cn.piesat.rediszsetq.consumer;
 import cn.piesat.rediszsetq.consumer.strategy.MultiThreadStrategy;
 import cn.piesat.rediszsetq.consumer.strategy.SingleThreadStrategy;
 import cn.piesat.rediszsetq.consumer.strategy.ThreadStrategy;
-import cn.piesat.rediszsetq.consumer.thread.ProcessingTaskListenerThread;
 import cn.piesat.rediszsetq.model.Message;
 import cn.piesat.rediszsetq.model.MessageStatusRecord;
 import cn.piesat.rediszsetq.producer.MessageProducer;
@@ -25,6 +24,7 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class MessageListenerContainer implements SmartLifecycle, ApplicationContextAware {
@@ -60,7 +60,7 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
     }
 
     private void startProcessingTaskListener() {
-        ProcessingTaskListenerThread processingTaskListenerThread = new ProcessingTaskListenerThread(() -> {
+        new Thread(() -> {
             List<Object> processingTasks = redisTemplate.opsForList().range(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, 9);
             processingTasks.forEach(task -> {
                 MessageStatusRecord msr = (MessageStatusRecord) task;
@@ -71,12 +71,15 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
                     if (remove != null && remove > 0) {
                         messageProducer.sendMessage(msr.setRetryCount(msr.getRetryCount() + 1));
                     }
-
                 }
             });
-        });
-        processingTaskListenerThread.setName("rediszsetq-processing-tasks");
-        processingTaskListenerThread.start();
+
+            try {
+                TimeUnit.SECONDS.sleep(5);
+            } catch (InterruptedException e) {
+                log.error("InterruptedException while listenering ProcessingTaskListenerThread", e);
+            }
+        }, "rediszsetq-processing-tasks").start();
     }
 
     private void startMessageListeners() {
