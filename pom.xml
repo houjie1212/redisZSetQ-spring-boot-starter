@@ -8,7 +8,7 @@
         <version>2.1.6.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>cn.hj</groupId>
+    <groupId>cn.piesat</groupId>
     <artifactId>redisZSetQ</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>redisZSetQ</name>

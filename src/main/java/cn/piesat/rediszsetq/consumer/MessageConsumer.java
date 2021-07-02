@@ -1,7 +1,7 @@
-package cn.hj.rediszsetq.consumer;
+package cn.piesat.rediszsetq.consumer;
 
-import cn.hj.rediszsetq.consumer.strategy.SingleThreadStrategy;
-import cn.hj.rediszsetq.consumer.strategy.ThreadStrategy;
+import cn.piesat.rediszsetq.consumer.strategy.SingleThreadStrategy;
+import cn.piesat.rediszsetq.consumer.strategy.ThreadStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;

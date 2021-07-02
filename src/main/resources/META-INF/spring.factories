@@ -1,1 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=cn.hj.rediszsetq.RedisQAutoConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=cn.piesat.rediszsetq.RedisQAutoConfiguration

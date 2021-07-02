@@ -45,12 +45,12 @@ public void produce() {
 - fetchCount: 拉取消息数
 
 ```java
-import cn.hj.rediszsetq.consumer.AbstractMessageListener;
-import cn.hj.rediszsetq.consumer.RedisZSetListener;
+import MessageListenerAdapter;
+import RedisZSetListener;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StringMessageListener extends AbstractMessageListener<String> {
+public class StringMessageListener extends MessageListenerAdapter<String> {
 
     @Override
     @RedisZSetListener("queueName")

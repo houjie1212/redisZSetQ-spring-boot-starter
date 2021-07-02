@@ -1,8 +1,7 @@
-package cn.hj.rediszsetq;
+package cn.piesat.rediszsetq;
 
-import cn.hj.rediszsetq.consumer.MessageListenerContainer;
-import cn.hj.rediszsetq.persistence.RedisZSetQOps;
-import cn.hj.rediszsetq.producer.MessageProducer;
+import cn.piesat.rediszsetq.config.BeanConfig;
+import cn.piesat.rediszsetq.consumer.MessageListenerContainer;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -21,7 +20,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 @ConditionalOnProperty(prefix = "redisZSetQ", value = "enabled", havingValue = "true")
-@Import(MessageListenerContainer.class)
+@Import({MessageListenerContainer.class, BeanConfig.class})
 public class RedisQAutoConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(RedisQAutoConfiguration.class);
@@ -45,14 +44,4 @@ public class RedisQAutoConfiguration {
         return template;
     }
 
-    @Bean
-    @ConditionalOnMissingBean(RedisZSetQOps.class)
-    public RedisZSetQOps redisQOps(LettuceConnectionFactory connectionFactory) {
-        return new RedisZSetQOps(redisTemplate(connectionFactory));
-    }
-
-    @Bean
-    public MessageProducer messageProducer(RedisZSetQOps redisZSetQOps) {
-        return new MessageProducer(redisZSetQOps);
-    }
 }

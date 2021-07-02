@@ -1,17 +1,17 @@
-package cn.hj.rediszsetq.producer;
+package cn.piesat.rediszsetq.producer;
 
-import cn.hj.rediszsetq.model.Message;
-import cn.hj.rediszsetq.persistence.RedisZSetQOps;
+import cn.piesat.rediszsetq.model.Message;
+import cn.piesat.rediszsetq.persistence.RedisZSetQOps;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
-import java.util.Calendar;
 import java.util.UUID;
 
 @Component
 public class MessageProducer {
 
     private final int defaultPriority = 0;
-    private final int defaultExpire = 30;
+    private final int defaultExpire = 300;
 
     private final RedisZSetQOps redisZSetQOps;
 
@@ -21,7 +21,9 @@ public class MessageProducer {
 
     public <T> void sendMessage(String queueName, T payload, int priority, int expire) {
         Message<T> message = Message.create(UUID.randomUUID().toString(), payload);
-        message.setCreation(Calendar.getInstance());
+        message.setQueueName(queueName)
+                .setPriority(priority)
+                .setExpire(expire);
         redisZSetQOps.enqueue(queueName, message, priority, expire);
     }
 
@@ -31,6 +33,13 @@ public class MessageProducer {
 
     public <T> void sendMessage(String queueName, T payload,  int priority) {
         sendMessage(queueName, payload, priority, defaultExpire);
+    }
+
+    public void sendMessage(Message message) {
+        if (StringUtils.isEmpty(message.getQueueName())) {
+            throw new IllegalArgumentException("队列名不能为空");
+        }
+        redisZSetQOps.enqueue(message.getQueueName(), message, message.getPriority(), message.getExpire());
     }
 
 }
