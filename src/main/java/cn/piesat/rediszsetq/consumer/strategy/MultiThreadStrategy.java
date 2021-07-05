@@ -1,12 +1,15 @@
-package cn.hj.rediszsetq.consumer.strategy;
+package cn.piesat.rediszsetq.consumer.strategy;
 
-import cn.hj.rediszsetq.consumer.DequeueThread;
-import cn.hj.rediszsetq.consumer.MessageListener;
-import cn.hj.rediszsetq.model.Message;
-import cn.hj.rediszsetq.persistence.RedisZSetQOps;
+import cn.piesat.rediszsetq.consumer.Consumer;
+import cn.piesat.rediszsetq.consumer.thread.DequeueThread;
+import cn.piesat.rediszsetq.consumer.MessageListener;
+import cn.piesat.rediszsetq.model.Message;
+import cn.piesat.rediszsetq.model.MessageStatusRecord;
+import cn.piesat.rediszsetq.persistence.RedisZSetQOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
@@ -22,6 +25,10 @@ public class MultiThreadStrategy implements ThreadStrategy {
 
     @Autowired
     private RedisZSetQOps redisZSetQOps;
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+    @Autowired
+    private Consumer consumer;
 
     public MultiThreadStrategy(int concurrency, int fetchCount) {
         this.concurrency = concurrency;
@@ -32,14 +39,18 @@ public class MultiThreadStrategy implements ThreadStrategy {
     public void start(String queueName, MessageListener messageListener) {
         for (int i = 0; i < concurrency; i++) {
             DequeueThread dequeueThread = new DequeueThread(() -> {
-                List<Message> messageList = redisZSetQOps.dequeue(queueName, Message.class, fetchCount);
+                List<Message> messageList = redisZSetQOps.dequeue(queueName, fetchCount);
                 try {
                     if (CollectionUtils.isEmpty(messageList)) {
                         TimeUnit.SECONDS.sleep(1);
                     } else {
-                        List<Object> payloads =
-                                messageList.stream().map(Message::getPayload).collect(Collectors.toList());
-                        messageListener.onMessage(payloads);
+                        List<MessageStatusRecord> messageStatusRecordList = messageList.stream()
+                                .map(MessageStatusRecord::new)
+                                .peek(messageStatusRecord -> redisTemplate.opsForList().rightPush(PROCESSING_TASKS_QNAME, messageStatusRecord))
+                                .collect(Collectors.toList());
+
+                        redisTemplate.expire(PROCESSING_TASKS_QNAME, 1, TimeUnit.DAYS);
+                        messageListener.onMessage(messageStatusRecordList, consumer);
                     }
                 } catch (InterruptedException e) {
                     log.error(e.getMessage(), e);

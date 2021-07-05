@@ -1,4 +1,4 @@
-package cn.hj.rediszsetq.consumer;
+package cn.piesat.rediszsetq.consumer;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

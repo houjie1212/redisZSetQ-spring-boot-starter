@@ -1,11 +1,11 @@
 # redisZSetQ
-用Redis Sorted-Set实现的优先级消息队列
+用Redis Sorted-Set实现的优先级消息队列，可靠消费
 
 ## Maven Dependency
 Clone this repo to local and add dependency.
 ```xml
 <dependency>
-    <groupId>cn.hj</groupId>
+    <groupId>cn.piesat</groupId>
     <artifactId>redisZSetQ</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 </dependency>
@@ -40,28 +40,32 @@ public void produce() {
 ```
 ### MessageListener
 ##### @RedisZSetListener属性:
-- value: 队列名
-- concurrency: 并发线程数
-- fetchCount: 拉取消息数
+- value: 队列名，必须
+- concurrency: 并发线程数，非必须，默认1
+- fetchCount: 拉取消息数，非必须，只有接收List生效，默认1
 
 ```java
-import cn.hj.rediszsetq.consumer.AbstractMessageListener;
-import cn.hj.rediszsetq.consumer.RedisZSetListener;
+import MessageListenerAdapter;
+import RedisZSetListener;
+import cn.piesat.rediszsetq.consumer.Consumer;
+import cn.piesat.rediszsetq.model.Message;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StringMessageListener extends AbstractMessageListener<String> {
+public class StringMessageListener extends MessageListenerAdapter<String> {
 
     @Override
     @RedisZSetListener("queueName")
-    public void onMessage(String message) {
+    public void onMessage(Message<String> message, Consumer consumer) {
         System.out.println(message);
+        consumer.ack(message);
     }
 
     @Override
     @RedisZSetListener(value = "queueName", concurrency = 2, fetchCount = 2)
-    public void onMessage(List<String> messages) {
+    public void onMessage(List<Message<String>> messages, Consumer consumer) {
         messages.forEach(message -> System.out.println(message));
+        consumer.ack(messages);
     }
 }
 ```

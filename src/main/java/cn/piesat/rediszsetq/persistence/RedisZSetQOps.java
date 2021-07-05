@@ -1,6 +1,8 @@
-package cn.hj.rediszsetq.persistence;
+package cn.piesat.rediszsetq.persistence;
 
-import cn.hj.rediszsetq.model.Message;
+import cn.piesat.rediszsetq.model.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Component;
@@ -10,6 +12,8 @@ import java.util.List;
 
 @Component
 public class RedisZSetQOps {
+
+    private static final Logger log = LoggerFactory.getLogger(RedisZSetQOps.class);
 
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -25,7 +29,7 @@ public class RedisZSetQOps {
         redisTemplate.execute(redisScript, Collections.singletonList(key), value, priority, expire);
     }
 
-    public <T> T dequeue(String key, Class<T> resultClass) {
+    public Message dequeue(String key) {
         String dequeueLua = "local result = redis.call('ZREVRANGE', KEYS[1], 0, 0) " +
                 "local ele = result[1] " +
                 "if ele then " +
@@ -34,11 +38,11 @@ public class RedisZSetQOps {
                 "else " +
                 "   return nil " +
                 "end";
-        DefaultRedisScript<T> redisScript = new DefaultRedisScript<>(dequeueLua, resultClass);
+        DefaultRedisScript<Message> redisScript = new DefaultRedisScript(dequeueLua, Message.class);
         return redisTemplate.execute(redisScript, Collections.singletonList(key));
     }
 
-    public <T> List<T> dequeue(String key, Class<T> resultClass, int rows) {
+    public <T> List<Message> dequeue(String key, int rows) {
         String dequeueLua = "local result = redis.call('ZREVRANGE', KEYS[1], 0, ARGV[1]) " +
                 "for i, ele in pairs(result) do " +
                 "   if ele then " +
@@ -49,4 +53,5 @@ public class RedisZSetQOps {
         DefaultRedisScript<List> redisScript = new DefaultRedisScript<>(dequeueLua, List.class);
         return redisTemplate.execute(redisScript, Collections.singletonList(key), --rows);
     }
+
 }

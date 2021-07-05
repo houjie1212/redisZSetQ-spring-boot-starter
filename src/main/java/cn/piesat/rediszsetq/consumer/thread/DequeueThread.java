@@ -1,4 +1,4 @@
-package cn.hj.rediszsetq.consumer;
+package cn.piesat.rediszsetq.consumer.thread;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
