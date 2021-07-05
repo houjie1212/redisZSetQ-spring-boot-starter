@@ -13,6 +13,7 @@ public class Message<T> {
     private String queueName;
     private int priority;
     private int expire;
+    private int consumerTimeout;
 
     @Override
     public String toString() {
@@ -86,6 +87,15 @@ public class Message<T> {
 
     public Message<T> setExpire(int expire) {
         this.expire = expire;
+        return this;
+    }
+
+    public int getConsumerTimeout() {
+        return consumerTimeout;
+    }
+
+    public Message<T> setConsumerTimeout(int consumerTimeout) {
+        this.consumerTimeout = consumerTimeout;
         return this;
     }
 }

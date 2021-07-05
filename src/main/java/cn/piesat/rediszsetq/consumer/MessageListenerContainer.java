@@ -1,5 +1,6 @@
 package cn.piesat.rediszsetq.consumer;
 
+import cn.piesat.rediszsetq.config.RedisZSetQProperties;
 import cn.piesat.rediszsetq.consumer.strategy.MultiThreadStrategy;
 import cn.piesat.rediszsetq.consumer.strategy.SingleThreadStrategy;
 import cn.piesat.rediszsetq.consumer.strategy.ThreadStrategy;
@@ -37,6 +38,8 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
     private RedisTemplate<String, Object> redisTemplate;
     @Autowired
     private MessageProducer messageProducer;
+    @Autowired
+    private RedisZSetQProperties redisZSetQProperties;
 
     @Override
     public void start() {
@@ -61,23 +64,26 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
 
     private void startProcessingTaskListener() {
         new Thread(() -> {
-            List<Object> processingTasks = redisTemplate.opsForList().range(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, 9);
-            processingTasks.forEach(task -> {
-                MessageStatusRecord msr = (MessageStatusRecord) task;
-                Duration duration = Duration.ofMillis(new Date().getTime() - msr.getConsumerStartTime().getTime());
-                if (duration.getSeconds() > 60) {
-                    log.info("检测到队列[{}]的消息{}执行超时，重新入队", msr.getQueueName(), msr.getPayload());
-                    Long remove = redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, msr);
-                    if (remove != null && remove > 0) {
-                        messageProducer.sendMessage(msr.setRetryCount(msr.getRetryCount() + 1));
+            while (true) {
+                List<Object> processingTasks = redisTemplate.opsForList().range(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, 9);
+                processingTasks.forEach(task -> {
+                    MessageStatusRecord msr = (MessageStatusRecord) task;
+                    Duration duration = Duration.ofMillis(new Date().getTime() - msr.getConsumerStartTime().getTime());
+                    int consumerTimeout = msr.getConsumerTimeout() > 0 ? msr.getConsumerTimeout() : redisZSetQProperties.getConsumerTimeout();
+                    if (duration.getSeconds() > consumerTimeout) {
+                        log.info("检测到队列[{}]的消息{}执行超时，重新入队", msr.getQueueName(), msr.getPayload());
+                        Long remove = redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, msr);
+                        if (remove != null && remove > 0) {
+                            messageProducer.sendMessage(msr.setRetryCount(msr.getRetryCount() + 1));
+                        }
                     }
-                }
-            });
+                });
 
-            try {
-                TimeUnit.SECONDS.sleep(5);
-            } catch (InterruptedException e) {
-                log.error("InterruptedException while listenering ProcessingTaskListenerThread", e);
+                try {
+                    TimeUnit.SECONDS.sleep(5);
+                } catch (InterruptedException e) {
+                    log.error("InterruptedException while listenering ProcessingTaskListenerThread", e);
+                }
             }
         }, "rediszsetq-processing-tasks").start();
     }

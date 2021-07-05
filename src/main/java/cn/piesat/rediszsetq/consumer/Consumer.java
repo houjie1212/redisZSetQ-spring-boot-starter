@@ -2,13 +2,15 @@ package cn.piesat.rediszsetq.consumer;
 
 import cn.piesat.rediszsetq.consumer.strategy.ThreadStrategy;
 import cn.piesat.rediszsetq.model.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
 public class Consumer {
+
+    private static final Logger log = LoggerFactory.getLogger(Consumer.class);
 
     private final RedisTemplate<String, Object> redisTemplate;
 

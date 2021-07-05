@@ -18,6 +18,7 @@ public class MessageStatusRecord extends Message {
         this.setPriority(message.getPriority());
         this.setExpire(message.getExpire());
         this.setConsumerStartTime(new Date());
+        this.setConsumerTimeout(message.getConsumerTimeout());
     }
 
     public Date getConsumerStartTime() {

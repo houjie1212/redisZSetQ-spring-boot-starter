@@ -2,12 +2,10 @@ package cn.piesat.rediszsetq.producer;
 
 import cn.piesat.rediszsetq.model.Message;
 import cn.piesat.rediszsetq.persistence.RedisZSetQOps;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.UUID;
 
-@Component
 public class MessageProducer {
 
     private final int defaultPriority = 0;
@@ -19,20 +17,25 @@ public class MessageProducer {
         this.redisZSetQOps = redisZSetQOps;
     }
 
-    public <T> void sendMessage(String queueName, T payload, int priority, int expire) {
+    public <T> void sendMessage(String queueName, T payload, int priority, int expire, int consumerTimeout) {
         Message<T> message = Message.create(UUID.randomUUID().toString(), payload);
         message.setQueueName(queueName)
                 .setPriority(priority)
-                .setExpire(expire);
+                .setExpire(expire)
+                .setConsumerTimeout(consumerTimeout);
         redisZSetQOps.enqueue(queueName, message, priority, expire);
     }
 
     public <T> void sendMessage(String queueName, T payload) {
-        sendMessage(queueName, payload, defaultPriority, defaultExpire);
+        sendMessage(queueName, payload, defaultPriority, defaultExpire, 0);
     }
 
-    public <T> void sendMessage(String queueName, T payload,  int priority) {
-        sendMessage(queueName, payload, priority, defaultExpire);
+    public <T> void sendMessage(String queueName, T payload, int priority) {
+        sendMessage(queueName, payload, priority, defaultExpire, 0);
+    }
+
+    public <T> void sendMessage(String queueName, T payload, int priority, int consumerTimeout) {
+        sendMessage(queueName, payload, priority, defaultExpire, consumerTimeout);
     }
 
     public void sendMessage(Message message) {
