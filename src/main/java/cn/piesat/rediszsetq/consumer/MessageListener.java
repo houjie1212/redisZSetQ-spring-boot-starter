@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface MessageListener<T> {
 
-    void onMessage(Message<T> message, Consumer consumer);
+    void onMessage(Message<T> message, Consumer<T> consumer);
 
-    void onMessage(List<Message<T>> messages, Consumer consumer);
+    void onMessage(List<Message<T>> messages, Consumer<T> consumer);
 }
