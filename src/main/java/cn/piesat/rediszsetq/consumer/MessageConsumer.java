@@ -47,4 +47,8 @@ public class MessageConsumer<T> {
         this.threadStrategy = threadStrategy;
         return this;
     }
+
+    public ThreadStrategy getThreadStrategy() {
+        return threadStrategy;
+    }
 }

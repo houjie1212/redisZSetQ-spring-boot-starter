@@ -24,8 +24,10 @@ spring.redis.lettuce.pool.max-idle=
 spring.redis.lettuce.pool.min-idle=
 
 rediszsetq.enabled=true
-# 消费执行超时时间（秒）
-rediszsetq.consumerTimeout=120
+# 消费执行超时时间（秒），默认60
+rediszsetq.consumer.timeout=60
+# 消费执行超时检查频率（秒/次），默认5
+rediszsetq.consumer.timeout-check-interval=5
 ```
 ### MessageProducer
 

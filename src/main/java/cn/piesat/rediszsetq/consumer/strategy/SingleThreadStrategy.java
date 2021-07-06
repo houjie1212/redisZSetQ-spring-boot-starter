@@ -1,8 +1,8 @@
 package cn.piesat.rediszsetq.consumer.strategy;
 
 import cn.piesat.rediszsetq.consumer.Consumer;
-import cn.piesat.rediszsetq.consumer.thread.DequeueThread;
 import cn.piesat.rediszsetq.consumer.MessageListener;
+import cn.piesat.rediszsetq.consumer.thread.DequeueThread;
 import cn.piesat.rediszsetq.model.Message;
 import cn.piesat.rediszsetq.model.MessageStatusRecord;
 import cn.piesat.rediszsetq.persistence.RedisZSetQOps;
@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class SingleThreadStrategy implements ThreadStrategy {
@@ -18,6 +20,7 @@ public class SingleThreadStrategy implements ThreadStrategy {
     private static final Logger log = LoggerFactory.getLogger(SingleThreadStrategy.class);
 
     private final int concurrency;
+    private final List<DequeueThread> dequeueThreads;
 
     @Autowired
     private RedisZSetQOps redisZSetQOps;
@@ -28,6 +31,7 @@ public class SingleThreadStrategy implements ThreadStrategy {
 
     public SingleThreadStrategy(int concurrency) {
         this.concurrency = concurrency;
+        dequeueThreads = new ArrayList<>(concurrency);
     }
 
     @Override
@@ -52,6 +56,16 @@ public class SingleThreadStrategy implements ThreadStrategy {
             });
             dequeueThread.setName(String.format("rediszsetq-consumer-single[%s]-%d", queueName, i));
             dequeueThread.start();
+
+            dequeueThreads.add(dequeueThread);
         }
+    }
+
+    @Override
+    public void stop() {
+        dequeueThreads.forEach(dequeueThread -> {
+            dequeueThread.setStopRequested(true);
+        });
+        dequeueThreads.clear();
     }
 }

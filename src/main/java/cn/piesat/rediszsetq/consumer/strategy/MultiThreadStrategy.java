@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -22,6 +23,7 @@ public class MultiThreadStrategy implements ThreadStrategy {
 
     private final int concurrency;
     private final int fetchCount;
+    private final List<DequeueThread> dequeueThreads;
 
     @Autowired
     private RedisZSetQOps redisZSetQOps;
@@ -33,6 +35,7 @@ public class MultiThreadStrategy implements ThreadStrategy {
     public MultiThreadStrategy(int concurrency, int fetchCount) {
         this.concurrency = concurrency;
         this.fetchCount = fetchCount;
+        dequeueThreads = new ArrayList<>(concurrency);
     }
 
     @Override
@@ -58,6 +61,16 @@ public class MultiThreadStrategy implements ThreadStrategy {
             });
             dequeueThread.setName(String.format("rediszsetq-consumer-multi[%s]-%d", queueName, i));
             dequeueThread.start();
+
+            dequeueThreads.add(dequeueThread);
         }
+    }
+
+    @Override
+    public void stop() {
+        dequeueThreads.forEach(dequeueThread -> {
+            dequeueThread.setStopRequested(true);
+        });
+        dequeueThreads.clear();
     }
 }

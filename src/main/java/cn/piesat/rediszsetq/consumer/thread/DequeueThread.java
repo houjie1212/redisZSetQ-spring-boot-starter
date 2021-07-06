@@ -20,8 +20,14 @@ public class DequeueThread extends Thread {
             try {
                 callback.run();
             } catch (Throwable t) {
-                log.error("Exception while handling next queue item.", t);
+                //log.error("Exception while handling next queue item.", t);
             }
         }
+        log.debug("{} stopped", this.getName());
+    }
+
+    public DequeueThread setStopRequested(boolean stopRequested) {
+        this.stopRequested = stopRequested;
+        return this;
     }
 }

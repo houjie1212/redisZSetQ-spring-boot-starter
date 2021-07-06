@@ -19,7 +19,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.*;
@@ -29,7 +28,10 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
 
     private static final Logger log = LoggerFactory.getLogger(MessageListenerContainer.class);
 
+    private boolean isRunning;
     private ApplicationContext applicationContext;
+    private List<ThreadStrategy> threadStrategies = new ArrayList<>();
+    private Timer processingTaskTimer;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -40,18 +42,23 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
 
     @Override
     public void start() {
+        log.info("MessageListenerContainer start");
         startMessageListeners();
-        startProcessingTaskListener();
+        processingTaskTimer = startProcessingTaskListener();
+        isRunning = true;
     }
 
     @Override
     public void stop() {
         log.info("MessageListenerContainer stop");
+        isRunning = false;
+        threadStrategies.forEach(ThreadStrategy::stop);
+        processingTaskTimer.cancel();
     }
 
     @Override
     public boolean isRunning() {
-        return false;
+        return isRunning;
     }
 
     @Override
@@ -59,8 +66,9 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
         this.applicationContext = applicationContext;
     }
 
-    private void startProcessingTaskListener() {
-        new Timer("rediszsetq-processing-tasks").scheduleAtFixedRate(new TimerTask() {
+    private Timer startProcessingTaskListener() {
+        Timer timer = new Timer("rediszsetq-processing-tasks");
+        timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 List<Object> processingTasks = redisTemplate.opsForList().range(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, 9);
@@ -78,6 +86,7 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
                 });
             }
         }, 0, redisZSetQConsumerProperties.getTimeoutCheckInterval() * 1000L);
+        return timer;
     }
 
     private void startMessageListeners() {
@@ -96,7 +105,7 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
                             .setQueueName(onMessageAnnotation.value())
                             .setThreadStrategy(new SingleThreadStrategy(onMessageAnnotation.concurrency()))
                             .init();
-                    Constructor<?>[] constructors = SingleThreadStrategy.class.getConstructors();
+                    threadStrategies.add(messageConsumer.getThreadStrategy());
                     log.info("启动消息监听器[{}].onMessage(T)，消费队列[{}]", k, onMessageAnnotation.value());
                 }
             }
@@ -113,6 +122,7 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
                             .setQueueName(onMessagesAnnotation.value())
                             .setThreadStrategy(new MultiThreadStrategy(onMessagesAnnotation.concurrency(), onMessagesAnnotation.fetchCount()))
                             .init();
+                    threadStrategies.add(messageConsumer.getThreadStrategy());
                     log.info("启动消息监听器[{}].onMessage(List<T>)，消费队列[{}]", k, onMessagesAnnotation.value());
                 }
             }
