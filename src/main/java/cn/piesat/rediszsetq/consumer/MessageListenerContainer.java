@@ -1,6 +1,6 @@
 package cn.piesat.rediszsetq.consumer;
 
-import cn.piesat.rediszsetq.config.RedisZSetQProperties;
+import cn.piesat.rediszsetq.config.RedisZSetQConsumerProperties;
 import cn.piesat.rediszsetq.consumer.strategy.MultiThreadStrategy;
 import cn.piesat.rediszsetq.consumer.strategy.SingleThreadStrategy;
 import cn.piesat.rediszsetq.consumer.strategy.ThreadStrategy;
@@ -22,10 +22,7 @@ import org.springframework.util.ReflectionUtils;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.time.Duration;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
 
 @Component
 public class MessageListenerContainer implements SmartLifecycle, ApplicationContextAware {
@@ -39,7 +36,7 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
     @Autowired
     private MessageProducer messageProducer;
     @Autowired
-    private RedisZSetQProperties redisZSetQProperties;
+    private RedisZSetQConsumerProperties redisZSetQConsumerProperties;
 
     @Override
     public void start() {
@@ -63,13 +60,14 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
     }
 
     private void startProcessingTaskListener() {
-        new Thread(() -> {
-            while (true) {
+        new Timer("rediszsetq-processing-tasks").scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
                 List<Object> processingTasks = redisTemplate.opsForList().range(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, 9);
                 processingTasks.forEach(task -> {
                     MessageStatusRecord msr = (MessageStatusRecord) task;
                     Duration duration = Duration.ofMillis(new Date().getTime() - msr.getConsumerStartTime().getTime());
-                    int consumerTimeout = msr.getConsumerTimeout() > 0 ? msr.getConsumerTimeout() : redisZSetQProperties.getConsumerTimeout();
+                    int consumerTimeout = msr.getConsumerTimeout() > 0 ? msr.getConsumerTimeout() : redisZSetQConsumerProperties.getTimeout();
                     if (duration.getSeconds() > consumerTimeout) {
                         log.info("检测到队列[{}]的消息{}执行超时，重新入队", msr.getQueueName(), msr.getPayload());
                         Long remove = redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, msr);
@@ -78,14 +76,8 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
                         }
                     }
                 });
-
-                try {
-                    TimeUnit.SECONDS.sleep(5);
-                } catch (InterruptedException e) {
-                    log.error("InterruptedException while listenering ProcessingTaskListenerThread", e);
-                }
             }
-        }, "rediszsetq-processing-tasks").start();
+        }, 0, redisZSetQConsumerProperties.getTimeoutCheckInterval() * 1000L);
     }
 
     private void startMessageListeners() {

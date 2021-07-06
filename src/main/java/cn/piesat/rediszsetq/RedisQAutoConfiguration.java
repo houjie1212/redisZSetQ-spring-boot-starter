@@ -1,7 +1,7 @@
 package cn.piesat.rediszsetq;
 
 import cn.piesat.rediszsetq.config.BeanConfig;
-import cn.piesat.rediszsetq.config.RedisZSetQProperties;
+import cn.piesat.rediszsetq.config.RedisZSetQConsumerProperties;
 import cn.piesat.rediszsetq.consumer.MessageListenerContainer;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -22,7 +22,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 @ConditionalOnProperty(prefix = "rediszsetq", value = "enabled", havingValue = "true")
-@EnableConfigurationProperties({RedisZSetQProperties.class})
+@EnableConfigurationProperties({RedisZSetQConsumerProperties.class})
 @Import({MessageListenerContainer.class, BeanConfig.class})
 public class RedisQAutoConfiguration {
 
