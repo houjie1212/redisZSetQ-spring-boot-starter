@@ -9,7 +9,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>cn.piesat</groupId>
-    <artifactId>redisZSetQ</artifactId>
+    <artifactId>redisZSetQ-spring-boot-starter</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>redisZSetQ</name>
     <properties>
@@ -22,7 +22,8 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-autoconfigure</artifactId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -6,7 +6,7 @@ Clone this repo to local and add dependency.
 ```xml
 <dependency>
     <groupId>cn.piesat</groupId>
-    <artifactId>redisZSetQ</artifactId>
+    <artifactId>redisZSetQ-spring-boot-starter</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 </dependency>
 ```
@@ -28,6 +28,23 @@ rediszsetq.enabled=true
 rediszsetq.consumer.timeout=60
 # 消费执行超时检查频率（秒/次），默认5
 rediszsetq.consumer.timeout-check-interval=5
+```
+### Enable Annotation
+
+```java
+import cn.piesat.rediszsetq.config.EnableRedisZSetQ;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+@EnableRedisZSetQ
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+}
 ```
 ### MessageProducer
 
