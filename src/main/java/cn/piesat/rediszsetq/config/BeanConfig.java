@@ -59,7 +59,7 @@ public class BeanConfig {
     }
 
     @Bean
-    public Consumer consumer(RedisTemplate<String, Object> redisTemplate) {
+    public Consumer consumer(@Qualifier("zsetQRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
         return new Consumer(redisTemplate);
     }
 
