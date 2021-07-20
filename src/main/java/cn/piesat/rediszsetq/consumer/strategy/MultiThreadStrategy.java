@@ -1,14 +1,15 @@
 package cn.piesat.rediszsetq.consumer.strategy;
 
 import cn.piesat.rediszsetq.consumer.Consumer;
-import cn.piesat.rediszsetq.consumer.thread.DequeueThread;
 import cn.piesat.rediszsetq.consumer.MessageListener;
+import cn.piesat.rediszsetq.consumer.thread.DequeueThread;
 import cn.piesat.rediszsetq.model.Message;
 import cn.piesat.rediszsetq.model.MessageStatusRecord;
 import cn.piesat.rediszsetq.persistence.RedisZSetQOps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.CollectionUtils;
 
@@ -28,6 +29,7 @@ public class MultiThreadStrategy implements ThreadStrategy {
     @Autowired
     private RedisZSetQOps redisZSetQOps;
     @Autowired
+    @Qualifier("zsetQRedisTemplate")
     private RedisTemplate<String, Object> redisTemplate;
     @Autowired
     private Consumer consumer;

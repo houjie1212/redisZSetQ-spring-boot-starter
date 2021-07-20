@@ -2,9 +2,12 @@ package cn.piesat.rediszsetq.model;
 
 import cn.piesat.rediszsetq.util.JsonUtil;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class Message<T> {
+public class Message<T> implements Serializable {
+
+    private static final long serialVersionUID = 6402629253063362398L;
 
     private String id;
     private Date creation;

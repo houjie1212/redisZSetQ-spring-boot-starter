@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.SmartLifecycle;
@@ -34,6 +35,7 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
     private Timer processingTaskTimer;
 
     @Autowired
+    @Qualifier("zsetQRedisTemplate")
     private RedisTemplate<String, Object> redisTemplate;
     @Autowired
     private MessageProducer messageProducer;

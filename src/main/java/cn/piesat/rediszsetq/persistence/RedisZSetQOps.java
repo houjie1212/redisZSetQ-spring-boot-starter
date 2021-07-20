@@ -3,6 +3,7 @@ package cn.piesat.rediszsetq.persistence;
 import cn.piesat.rediszsetq.model.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 
@@ -15,7 +16,7 @@ public class RedisZSetQOps {
 
     private final RedisTemplate<String, Object> redisTemplate;
 
-    public RedisZSetQOps(RedisTemplate<String, Object> redisTemplate) {
+    public RedisZSetQOps(@Qualifier("zsetQRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
         this.redisTemplate = redisTemplate;
     }
 

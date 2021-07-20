@@ -8,7 +8,9 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -25,9 +27,11 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @ComponentScan("cn.piesat.rediszsetq")
 public class BeanConfig {
 
-    @Bean
-    @ConditionalOnMissingBean
+    private static final Logger log = LoggerFactory.getLogger(BeanConfig.class);
+
+    @Bean("zsetQRedisTemplate")
     public RedisTemplate<String, Object> redisTemplate(LettuceConnectionFactory connectionFactory) {
+        log.info("-----------> create zsetq redisTemplate bean...");
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
@@ -45,7 +49,7 @@ public class BeanConfig {
     }
 
     @Bean
-    public RedisZSetQOps redisQOps(RedisTemplate<String, Object> redisTemplate) {
+    public RedisZSetQOps redisQOps(@Qualifier("zsetQRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
         return new RedisZSetQOps(redisTemplate);
     }
 
@@ -60,7 +64,6 @@ public class BeanConfig {
     }
 
     @Bean
-    @ConditionalOnMissingBean
     public JsonUtil jsonUtil(ObjectMapper objectMapper) {
         return new JsonUtil(objectMapper);
     }
