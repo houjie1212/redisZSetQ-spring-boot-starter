@@ -28,7 +28,7 @@ public class MessageConsumer<T> {
 
     public void startConsumer() {
         if (threadStrategy == null) {
-            threadStrategy = new SingleThreadStrategy(1);
+            threadStrategy = new SingleThreadStrategy(1, 1);
         }
         threadStrategy.start(queueName, messageListener);
     }
