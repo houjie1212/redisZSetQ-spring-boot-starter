@@ -60,10 +60,12 @@ public void produce() {
 }
 ```
 ### MessageListener
-##### @RedisZSetListener属性:
+继承 MessageListenerAdapter<T> 并在 onMessage 方法上添加 @RedisZSetListener 注解
+##### @RedisZSetListener 属性:
 - value: 队列名，必须
 - concurrency: 并发线程数，非必须，默认1
 - fetchCount: 拉取消息数，非必须，只有接收List生效，默认1
+- restTimeIfConsumeNull: 消费消息为空时，休眠时间（秒），默认1
 
 ```java
 import MessageListenerAdapter;

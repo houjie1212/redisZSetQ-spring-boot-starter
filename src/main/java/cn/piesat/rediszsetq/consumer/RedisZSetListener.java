@@ -17,4 +17,7 @@ public @interface RedisZSetListener {
 
     // 拉取消息数量
     int fetchCount() default 1;
+
+    // 消费消息为空时，休眠时间（秒）
+    int restTimeIfConsumeNull() default 1;
 }

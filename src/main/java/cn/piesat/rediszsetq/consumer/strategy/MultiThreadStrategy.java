@@ -23,6 +23,7 @@ public class MultiThreadStrategy implements ThreadStrategy {
     private static final Logger log = LoggerFactory.getLogger(MultiThreadStrategy.class);
 
     private final int concurrency;
+    private final int restTimeIfConsumeNull;
     private final int fetchCount;
     private final List<DequeueThread> dequeueThreads;
 
@@ -34,8 +35,9 @@ public class MultiThreadStrategy implements ThreadStrategy {
     @Autowired
     private Consumer consumer;
 
-    public MultiThreadStrategy(int concurrency, int fetchCount) {
+    public MultiThreadStrategy(int concurrency, int restTimeIfConsumeNull, int fetchCount) {
         this.concurrency = concurrency;
+        this.restTimeIfConsumeNull = restTimeIfConsumeNull;
         this.fetchCount = fetchCount;
         dequeueThreads = new ArrayList<>(concurrency);
     }
@@ -47,7 +49,7 @@ public class MultiThreadStrategy implements ThreadStrategy {
                 List<Message> messageList = redisZSetQOps.dequeue(queueName, fetchCount);
                 try {
                     if (CollectionUtils.isEmpty(messageList)) {
-                        TimeUnit.SECONDS.sleep(1);
+                        TimeUnit.SECONDS.sleep(restTimeIfConsumeNull);
                     } else {
                         List<MessageStatusRecord> messageStatusRecordList = messageList.stream()
                                 .map(MessageStatusRecord::new)

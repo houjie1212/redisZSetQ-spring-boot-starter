@@ -105,7 +105,8 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
                     applicationContext.getAutowireCapableBeanFactory().autowireBean(messageConsumer);
                     messageConsumer.setMessageListener(v)
                             .setQueueName(onMessageAnnotation.value())
-                            .setThreadStrategy(new SingleThreadStrategy(onMessageAnnotation.concurrency()))
+                            .setThreadStrategy(new SingleThreadStrategy(
+                                    onMessageAnnotation.concurrency(), onMessageAnnotation.restTimeIfConsumeNull()))
                             .init();
                     threadStrategies.add(messageConsumer.getThreadStrategy());
                     log.info("启动消息监听器[{}].onMessage(T)，消费队列[{}]", k, onMessageAnnotation.value());
@@ -122,7 +123,9 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
                     applicationContext.getAutowireCapableBeanFactory().autowireBean(messageConsumer);
                     messageConsumer.setMessageListener(v)
                             .setQueueName(onMessagesAnnotation.value())
-                            .setThreadStrategy(new MultiThreadStrategy(onMessagesAnnotation.concurrency(), onMessagesAnnotation.fetchCount()))
+                            .setThreadStrategy(new MultiThreadStrategy(
+                                    onMessagesAnnotation.concurrency(), onMessagesAnnotation.restTimeIfConsumeNull(),
+                                    onMessagesAnnotation.fetchCount()))
                             .init();
                     threadStrategies.add(messageConsumer.getThreadStrategy());
                     log.info("启动消息监听器[{}].onMessage(List<T>)，消费队列[{}]", k, onMessagesAnnotation.value());

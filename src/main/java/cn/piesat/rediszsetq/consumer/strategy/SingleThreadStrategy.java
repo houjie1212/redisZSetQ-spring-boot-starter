@@ -21,6 +21,7 @@ public class SingleThreadStrategy implements ThreadStrategy {
     private static final Logger log = LoggerFactory.getLogger(SingleThreadStrategy.class);
 
     private final int concurrency;
+    private final int restTimeIfConsumeNull;
     private final List<DequeueThread> dequeueThreads;
 
     @Autowired
@@ -31,8 +32,9 @@ public class SingleThreadStrategy implements ThreadStrategy {
     @Autowired
     private Consumer consumer;
 
-    public SingleThreadStrategy(int concurrency) {
+    public SingleThreadStrategy(int concurrency, int restTimeIfConsumeNull) {
         this.concurrency = concurrency;
+        this.restTimeIfConsumeNull = restTimeIfConsumeNull;
         dequeueThreads = new ArrayList<>(concurrency);
     }
 
@@ -43,7 +45,7 @@ public class SingleThreadStrategy implements ThreadStrategy {
                 Message messageResult = redisZSetQOps.dequeue(queueName);
                 try {
                     if (messageResult == null) {
-                        TimeUnit.SECONDS.sleep(1);
+                        TimeUnit.SECONDS.sleep(restTimeIfConsumeNull);
                     } else {
                         // 放入记录队列，标记任务执行中
                         MessageStatusRecord messageStatusRecord = new MessageStatusRecord(messageResult);
