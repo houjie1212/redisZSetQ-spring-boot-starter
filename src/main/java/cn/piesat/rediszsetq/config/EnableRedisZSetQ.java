@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Import({MessageListenerContainer.class, BeanConfig.class})
+@Import({RedisConfig.class, BeanConfig.class, MessageListenerContainer.class})
 public @interface EnableRedisZSetQ {
 }

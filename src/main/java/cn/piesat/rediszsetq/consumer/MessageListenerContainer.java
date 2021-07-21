@@ -24,6 +24,9 @@ import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.*;
 
+/**
+ * 消息监听器管理容器
+ */
 @Component
 public class MessageListenerContainer implements SmartLifecycle, ApplicationContextAware {
 

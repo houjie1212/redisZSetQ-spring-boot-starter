@@ -12,18 +12,16 @@ Clone this repo to local and add dependency.
 ```
 ## Useage
 ### Config
+根据配置信息自动选择集群类型和连接池类型：
+- 集群优先级：sentinel > cluster > standalone
+- 连接池优先级：lettuce > jedis > null
 ```properties
 spring.redis.host=
 spring.redis.port=
 spring.redis.password=
 spring.redis.database=
 spring.redis.timeout=
-spring.redis.lettuce.pool.max-active=
-spring.redis.lettuce.pool.max-wait=
-spring.redis.lettuce.pool.max-idle=
-spring.redis.lettuce.pool.min-idle=
 
-rediszsetq.enabled=true
 # 消费执行超时时间（秒），默认60
 rediszsetq.consumer.timeout=60
 # 消费执行超时检查频率（秒/次），默认5
