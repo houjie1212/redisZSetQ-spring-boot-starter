@@ -6,6 +6,7 @@ import cn.piesat.rediszsetq.consumer.thread.DequeueThread;
 import cn.piesat.rediszsetq.model.Message;
 import cn.piesat.rediszsetq.model.MessageStatusRecord;
 import cn.piesat.rediszsetq.persistence.RedisZSetQOps;
+import cn.piesat.rediszsetq.util.ClientUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,8 +50,8 @@ public class SingleThreadStrategy implements ThreadStrategy {
                     } else {
                         // 放入记录队列，标记任务执行中
                         MessageStatusRecord messageStatusRecord = new MessageStatusRecord(messageResult);
-                        redisTemplate.opsForList().rightPush(PROCESSING_TASKS_QNAME, messageStatusRecord);
-                        redisTemplate.expire(PROCESSING_TASKS_QNAME, 1, TimeUnit.DAYS);
+                        redisTemplate.opsForList().rightPush(PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), messageStatusRecord);
+                        redisTemplate.expire(PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), 1, TimeUnit.DAYS);
 
                         messageListener.onMessage(messageStatusRecord, consumer);
                     }

@@ -9,7 +9,6 @@
     <groupId>cn.piesat</groupId>
     <artifactId>redisZSetQ-spring-boot-starter</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>redisZSetQ</name>
     <properties>
         <java.version>1.8</java.version>
     </properties>
@@ -54,7 +53,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-</dependencies>
+    </dependencies>
 
     <build>
         <plugins>

@@ -2,6 +2,7 @@ package cn.piesat.rediszsetq.consumer;
 
 import cn.piesat.rediszsetq.consumer.strategy.ThreadStrategy;
 import cn.piesat.rediszsetq.model.Message;
+import cn.piesat.rediszsetq.util.ClientUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -19,10 +20,13 @@ public class Consumer<T> {
     }
 
     public void ack(Message<T> message) {
-        redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, message);
+        redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), 0,
+                message);
     }
 
     public void ack(List<Message<T>> messages) {
-        messages.forEach(message -> redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME, 0, message));
+        messages.forEach(message ->
+                redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME + ClientUtil.getClientName(),
+                        0, message));
     }
 }

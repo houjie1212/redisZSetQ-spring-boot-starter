@@ -6,6 +6,7 @@ import cn.piesat.rediszsetq.consumer.thread.DequeueThread;
 import cn.piesat.rediszsetq.model.Message;
 import cn.piesat.rediszsetq.model.MessageStatusRecord;
 import cn.piesat.rediszsetq.persistence.RedisZSetQOps;
+import cn.piesat.rediszsetq.util.ClientUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,10 +54,10 @@ public class MultiThreadStrategy implements ThreadStrategy {
                     } else {
                         List<MessageStatusRecord> messageStatusRecordList = messageList.stream()
                                 .map(MessageStatusRecord::new)
-                                .peek(messageStatusRecord -> redisTemplate.opsForList().rightPush(PROCESSING_TASKS_QNAME, messageStatusRecord))
+                                .peek(messageStatusRecord -> redisTemplate.opsForList().rightPush(PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), messageStatusRecord))
                                 .collect(Collectors.toList());
 
-                        redisTemplate.expire(PROCESSING_TASKS_QNAME, 1, TimeUnit.DAYS);
+                        redisTemplate.expire(PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), 1, TimeUnit.DAYS);
                         messageListener.onMessage(messageStatusRecordList, consumer);
                     }
                 } catch (InterruptedException e) {

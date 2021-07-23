@@ -3,11 +3,13 @@ package cn.piesat.rediszsetq.config;
 import cn.piesat.rediszsetq.consumer.Consumer;
 import cn.piesat.rediszsetq.persistence.RedisZSetQOps;
 import cn.piesat.rediszsetq.producer.MessageProducer;
+import cn.piesat.rediszsetq.util.ClientUtil;
 import cn.piesat.rediszsetq.util.JsonUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -42,5 +44,11 @@ public class BeanConfig {
     @Bean
     public JsonUtil jsonUtil(ObjectMapper objectMapper) {
         return new JsonUtil(objectMapper);
+    }
+
+    @Bean
+    public ClientUtil clientUtil(@Value("${spring.application.name:}") String applicationName,
+                                 RedisZSetQConsumerProperties redisZSetQConsumerProperties) {
+        return new ClientUtil(applicationName, redisZSetQConsumerProperties);
     }
 }

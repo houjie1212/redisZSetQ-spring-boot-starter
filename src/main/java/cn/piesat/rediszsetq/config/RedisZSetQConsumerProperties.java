@@ -7,6 +7,7 @@ public class RedisZSetQConsumerProperties {
 
     private int timeout = 60;
     private int timeoutCheckInterval = 5;
+    private String timeoutCheckGroup;
 
     public int getTimeout() {
         return timeout;
@@ -23,6 +24,15 @@ public class RedisZSetQConsumerProperties {
 
     public RedisZSetQConsumerProperties setTimeoutCheckInterval(int timeoutCheckInterval) {
         this.timeoutCheckInterval = timeoutCheckInterval;
+        return this;
+    }
+
+    public String getTimeoutCheckGroup() {
+        return timeoutCheckGroup;
+    }
+
+    public RedisZSetQConsumerProperties setTimeoutCheckGroup(String timeoutCheckGroup) {
+        this.timeoutCheckGroup = timeoutCheckGroup;
         return this;
     }
 }
