@@ -2,7 +2,7 @@ package cn.piesat.rediszsetq.producer;
 
 import cn.piesat.rediszsetq.model.Message;
 import cn.piesat.rediszsetq.persistence.RedisZSetQOps;
-import org.springframework.util.StringUtils;
+import org.springframework.util.Assert;
 
 import java.util.UUID;
 
@@ -18,6 +18,7 @@ public class MessageProducer {
     }
 
     public <T> void sendMessage(String queueName, T payload, int priority, int expire, int consumerTimeout) {
+        Assert.hasText(queueName, "队列名不能为空");
         Message<T> message = Message.create(UUID.randomUUID().toString(), payload);
         message.setQueueName(queueName)
                 .setPriority(priority)
@@ -39,9 +40,7 @@ public class MessageProducer {
     }
 
     public void sendMessage(Message message) {
-        if (StringUtils.isEmpty(message.getQueueName())) {
-            throw new IllegalArgumentException("队列名不能为空");
-        }
+        Assert.hasText(message.getQueueName(), "队列名不能为空");
         redisZSetQOps.enqueue(message.getQueueName(), message, message.getPriority(), message.getExpire());
     }
 

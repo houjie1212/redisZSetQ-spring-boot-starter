@@ -21,6 +21,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ReflectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.time.Duration;
@@ -80,9 +81,7 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
             Method onMessage = ReflectionUtils.findMethod(v.getClass(), "onMessage", Message.class, Consumer.class);
             if (onMessage != null) {
                 RedisZSetListener onMessageAnnotation = AnnotationUtils.findAnnotation(onMessage, RedisZSetListener.class);
-                if (onMessageAnnotation == null) {
-                    log.warn("[{}]的方法onMessage没有添加RedisZSetListener注解，不会启动监听器", k);
-                } else {
+                if (onMessageAnnotation == null && StringUtils.hasText(onMessageAnnotation.value())) {
                     MessageConsumer messageConsumer = new MessageConsumer(applicationContext);
                     applicationContext.getAutowireCapableBeanFactory().autowireBean(messageConsumer);
                     messageConsumer.setMessageListener(v)
@@ -98,9 +97,7 @@ public class MessageListenerContainer implements SmartLifecycle, ApplicationCont
             Method onMessageList = ReflectionUtils.findMethod(v.getClass(), "onMessage", List.class, Consumer.class);
             if (onMessageList != null) {
                 RedisZSetListener onMessagesAnnotation = AnnotationUtils.findAnnotation(onMessageList, RedisZSetListener.class);
-                if (onMessagesAnnotation == null) {
-                    log.warn("[{}]的方法onMessage没有添加RedisZSetListener注解，不会启动监听器", k);
-                } else {
+                if (onMessagesAnnotation == null && StringUtils.hasText(onMessagesAnnotation.value())) {
                     MessageConsumer messageConsumer = new MessageConsumer(applicationContext);
                     applicationContext.getAutowireCapableBeanFactory().autowireBean(messageConsumer);
                     messageConsumer.setMessageListener(v)
