@@ -7,7 +7,7 @@ Clone this repo to local and add dependency.
 <dependency>
     <groupId>cn.piesat</groupId>
     <artifactId>redisZSetQ-spring-boot-starter</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>${version}</version>
 </dependency>
 ```
 ## Useage
@@ -22,15 +22,21 @@ spring.redis.password=
 spring.redis.database=
 spring.redis.timeout=
 
-# 消费执行超时时间（秒），默认60
-rediszsetq.consumer.timeout=60
+# 消费执行超时时间（秒），默认3600
+rediszsetq.consumer.timeout=3600
 # 消费执行超时检查频率（秒/次），默认5
 rediszsetq.consumer.timeout-check-interval=5
+# 消费并发线程数，默认1
+rediszsetq.consumer.concurrency=1
+# 消费每次拉取消息数量，默认2
+rediszsetq.consumer.fetch-count=2
+# 最大重试次数，-1不限制，0不重试，>0 n次
+max-retry-count=5
 ```
 ### Enable Annotation
 
 ```java
-import cn.piesat.rediszsetq.config.EnableRedisZSetQ;
+import cn.rediszsetq.EnableRedisZSetQ;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -61,15 +67,15 @@ public void produce() {
 继承 MessageListenerAdapter<T> 并在 onMessage 方法上添加 @RedisZSetListener 注解
 ##### @RedisZSetListener 属性:
 - value: 队列名，必须
-- concurrency: 并发线程数，非必须，默认1
-- fetchCount: 拉取消息数，非必须，只有接收List生效，默认1
+- concurrency: 并发线程数，非必须
+- fetchCount: 拉取消息数，非必须，只有接收List生效
 - restTimeIfConsumeNull: 消费消息为空时，休眠时间（秒），默认1
 
 ```java
 import MessageListenerAdapter;
 import RedisZSetListener;
-import cn.piesat.rediszsetq.consumer.Consumer;
-import cn.piesat.rediszsetq.model.Message;
+import Consumer;
+import Message;
 import org.springframework.stereotype.Component;
 
 @Component
