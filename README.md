@@ -4,7 +4,7 @@
 ## Maven Dependency
 ```xml
 <dependency>
-    <groupId>cn.piesat</groupId>
+    <groupId>pers</groupId>
     <artifactId>redisZSetQ-spring-boot-starter</artifactId>
     <version>${version}</version>
 </dependency>
@@ -56,14 +56,14 @@ public void produce() {
 - restTimeIfConsumeNull: 消费消息为空时，休眠时间（秒），默认1
 
 ```java
-import MessageListenerAdapter;
-import RedisZSetListener;
-import Consumer;
-import Message;
+import pers.rediszsetq.consumer.MessageListener;
+import pers.rediszsetq.consumer.RedisZSetListener;
+import pers.rediszsetq.consumer.Consumer;
+import pers.rediszsetq.model.Message;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StringMessageListener extends MessageListenerAdapter<String> {
+public class StringMessageListener implements MessageListener<String> {
 
     @Override
     @RedisZSetListener("queueName")
