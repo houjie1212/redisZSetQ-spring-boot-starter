@@ -2,7 +2,6 @@
 用Redis Sorted-Set实现的优先级消息队列，可靠消费
 
 ## Maven Dependency
-Clone this repo to local and add dependency.
 ```xml
 <dependency>
     <groupId>cn.piesat</groupId>
@@ -10,6 +9,7 @@ Clone this repo to local and add dependency.
     <version>${version}</version>
 </dependency>
 ```
+
 ## Useage
 ### Config
 根据配置信息自动选择集群类型和连接池类型：
@@ -33,25 +33,8 @@ rediszsetq.consumer.fetch-count=2
 # 最大重试次数，-1不限制，0不重试，>0 n次
 max-retry-count=5
 ```
-### Enable Annotation
 
-```java
-import cn.rediszsetq.EnableRedisZSetQ;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-@EnableRedisZSetQ
-public class Application {
-
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
-    }
-
-}
-```
 ### MessageProducer
-
 ```java
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -63,6 +46,7 @@ public void produce() {
     messageProducer.send("queueName", "hello", 0);
 }
 ```
+
 ### MessageListener
 继承 MessageListenerAdapter<T> 并在 onMessage 方法上添加 @RedisZSetListener 注解
 ##### @RedisZSetListener 属性:
