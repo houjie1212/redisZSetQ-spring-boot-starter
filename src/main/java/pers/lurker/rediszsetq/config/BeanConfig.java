@@ -1,5 +1,6 @@
 package pers.lurker.rediszsetq.config;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import pers.lurker.rediszsetq.consumer.Consumer;
 import pers.lurker.rediszsetq.persistence.RedisZSetQOps;
 import pers.lurker.rediszsetq.producer.MessageProducer;
@@ -44,6 +45,12 @@ public class BeanConfig {
     @Bean
     public JsonUtil jsonUtil(ObjectMapper objectMapper) {
         return new JsonUtil(objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 
     @Bean
