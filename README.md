@@ -4,7 +4,7 @@
 ## Maven Dependency
 ```xml
 <dependency>
-    <groupId>pers</groupId>
+    <groupId>pers.lurker</groupId>
     <artifactId>redisZSetQ-spring-boot-starter</artifactId>
     <version>${version}</version>
 </dependency>
@@ -56,10 +56,10 @@ public void produce() {
 - restTimeIfConsumeNull: 消费消息为空时，休眠时间（秒），默认1
 
 ```java
-import pers.rediszsetq.consumer.MessageListener;
-import pers.rediszsetq.consumer.RedisZSetListener;
-import pers.rediszsetq.consumer.Consumer;
-import pers.rediszsetq.model.Message;
+import pers.lurker.rediszsetq.consumer.MessageListener;
+import pers.lurker.rediszsetq.consumer.RedisZSetListener;
+import pers.lurker.rediszsetq.consumer.Consumer;
+import pers.lurker.rediszsetq.model.Message;
 import org.springframework.stereotype.Component;
 
 @Component
