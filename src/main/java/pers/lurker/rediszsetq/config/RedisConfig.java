@@ -196,7 +196,9 @@ public class RedisConfig {
         genericObjectPoolConfig.setMinIdle(lettuce.getPool().getMinIdle());
         genericObjectPoolConfig.setMaxTotal(lettuce.getPool().getMaxActive());
         genericObjectPoolConfig.setMaxWaitMillis(lettuce.getPool().getMaxWait().toMillis());
-        genericObjectPoolConfig.setTimeBetweenEvictionRunsMillis(lettuce.getPool().getTimeBetweenEvictionRuns().toMillis());
+        if (lettuce.getPool().getTimeBetweenEvictionRuns() != null) {
+            genericObjectPoolConfig.setTimeBetweenEvictionRunsMillis(lettuce.getPool().getTimeBetweenEvictionRuns().toMillis());
+        }
         return LettucePoolingClientConfiguration.builder()
                 .commandTimeout(redisProperties.getTimeout())
                 .shutdownTimeout(lettuce.getShutdownTimeout())
@@ -217,7 +219,8 @@ public class RedisConfig {
         if (jedis.getPool().getTimeBetweenEvictionRuns() != null) {
             jedisPoolConfig.setTimeBetweenEvictionRunsMillis(jedis.getPool().getTimeBetweenEvictionRuns().toMillis());
         }
-        return ((JedisClientConfiguration.JedisPoolingClientConfigurationBuilder) JedisClientConfiguration.builder())
+        return JedisClientConfiguration.builder()
+                .usePooling()
                 .poolConfig(jedisPoolConfig)
                 .build();
     }
