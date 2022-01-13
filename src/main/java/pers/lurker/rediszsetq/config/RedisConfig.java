@@ -154,6 +154,7 @@ public class RedisConfig {
             nodes.add(new RedisNode(parts[0], Integer.parseInt(parts[1])));
         }
         config.setSentinels(nodes);
+        config.setDatabase(redisProperties.getDatabase());
         if (StringUtils.hasText(redisProperties.getPassword())) {
             config.setPassword(RedisPassword.of(redisProperties.getPassword()));
         }
@@ -191,7 +192,7 @@ public class RedisConfig {
         if (lettuce == null || lettuce.getPool() == null) {
             return null;
         }
-        GenericObjectPoolConfig genericObjectPoolConfig = new GenericObjectPoolConfig();
+        GenericObjectPoolConfig<?> genericObjectPoolConfig = new GenericObjectPoolConfig<>();
         genericObjectPoolConfig.setMaxIdle(lettuce.getPool().getMaxIdle());
         genericObjectPoolConfig.setMinIdle(lettuce.getPool().getMinIdle());
         genericObjectPoolConfig.setMaxTotal(lettuce.getPool().getMaxActive());
