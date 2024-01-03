@@ -1,40 +1,43 @@
 package pers.lurker.rediszsetq.consumer.strategy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.BoundValueOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.util.CollectionUtils;
+import pers.lurker.rediszsetq.config.RedisZSetQProperties;
 import pers.lurker.rediszsetq.consumer.Consumer;
 import pers.lurker.rediszsetq.consumer.MessageListener;
 import pers.lurker.rediszsetq.consumer.thread.DequeueThread;
 import pers.lurker.rediszsetq.model.Message;
-import pers.lurker.rediszsetq.model.MessageStatusRecord;
-import pers.lurker.rediszsetq.persistence.RedisZSetQOps;
-import pers.lurker.rediszsetq.util.ClientUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.util.CollectionUtils;
+import pers.lurker.rediszsetq.persistence.RedisZSetQService;
+import pers.lurker.rediszsetq.util.DateUtil;
+import pers.lurker.rediszsetq.util.KeyUtil;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class MultiThreadStrategy implements ThreadStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(MultiThreadStrategy.class);
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final int concurrency;
     private final int restTimeIfConsumeNull;
     private final int fetchCount;
     private final List<DequeueThread> dequeueThreads;
 
-    @Autowired
-    private RedisZSetQOps redisZSetQOps;
-    @Autowired
+    @Resource
+    private RedisZSetQService redisZSetQService;
+    @Resource
     @Qualifier("zsetQRedisTemplate")
     private RedisTemplate<String, Object> redisTemplate;
-    @Autowired
+    @Resource
     private Consumer consumer;
+    @Resource
+    private RedisZSetQProperties properties;
 
     public MultiThreadStrategy(int concurrency, int restTimeIfConsumeNull, int fetchCount) {
         this.concurrency = concurrency;
@@ -44,24 +47,25 @@ public class MultiThreadStrategy implements ThreadStrategy {
     }
 
     @Override
-    public void start(String queueName, MessageListener messageListener) {
+    public void start(String groupName, String queueName, MessageListener messageListener) {
         for (int i = 0; i < concurrency; i++) {
             DequeueThread dequeueThread = new DequeueThread(() -> {
-                List<Message> messageResults = redisZSetQOps.dequeue(queueName, fetchCount);
+                List<Message> messageResults = redisZSetQService.getByGroupName(groupName)
+                    .dequeue(queueName, fetchCount);
                 try {
                     if (CollectionUtils.isEmpty(messageResults)) {
                         TimeUnit.SECONDS.sleep(restTimeIfConsumeNull);
                     } else {
-                        List<MessageStatusRecord> messageStatusRecords = saveProcessingTask(messageResults);
-                        saveLogTask(messageStatusRecords);
+                        saveRunningTask(messageResults);
+                        saveLogTask(messageResults);
 
-                        messageListener.onMessage(messageStatusRecords, consumer);
+                        messageListener.onMessage(messageResults, consumer);
                     }
                 } catch (InterruptedException e) {
-                    log.error(e.getMessage(), e);
+                    Thread.currentThread().interrupt();
                 }
             });
-            dequeueThread.setName(String.format("rediszsetq-consumer-multi[%s]-%d", queueName, i));
+            dequeueThread.setName(String.format("rediszsetq-consumer-multi[%s-%s]-%d", groupName, queueName, i));
             dequeueThread.start();
 
             dequeueThreads.add(dequeueThread);
@@ -70,23 +74,40 @@ public class MultiThreadStrategy implements ThreadStrategy {
 
     @Override
     public void stop() {
-        dequeueThreads.forEach(dequeueThread -> {
-            dequeueThread.setStopRequested(true);
-        });
+        dequeueThreads.forEach(Thread::interrupt);
         dequeueThreads.clear();
     }
 
-    private List<MessageStatusRecord> saveProcessingTask(List<Message> messageResults) {
-        List<MessageStatusRecord> messageStatusRecords = messageResults.stream()
-                .map(MessageStatusRecord::new)
-                .collect(Collectors.toList());
-        redisTemplate.opsForList().rightPushAll(PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), messageStatusRecords);
-        redisTemplate.expire(PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), 1, TimeUnit.DAYS);
-        return messageStatusRecords;
+    /**
+     * 消息出队后，标记任务执行中，用于检查是否超时
+     * @param messageResults
+     * @return
+     */
+    private void saveRunningTask(List<Message> messageResults) {
+        messageResults.forEach(messageResult -> {
+            redisTemplate.boundListOps(KeyUtil.taskRunningKey(messageResult.getGroupName(), messageResult.getQueueName()))
+                .rightPush(messageResult.getId());
+
+            String statusKey = KeyUtil.taskStatusKeyPrefix(messageResult.getGroupName(), messageResult.getQueueName()) + messageResult.getId();
+            BoundValueOperations<String, Object> messageOps = redisTemplate.boundValueOps(statusKey);
+            Message message = (Message) messageOps.get();
+            message.setStatus(1)
+                .setConsumerStartTime(DateUtil.getNow());
+            messageOps.set(message);
+        });
+
     }
 
-    private void saveLogTask(List<MessageStatusRecord> messageStatusRecords) {
-        redisTemplate.opsForList().rightPushAll(LOG_TASKS_QNAME + ClientUtil.getClientName(), messageStatusRecords);
-        redisTemplate.expire(LOG_TASKS_QNAME + ClientUtil.getClientName(), 7, TimeUnit.DAYS);
+    /**
+     * 记录日志
+     * @param messageResults
+     */
+    private void saveLogTask(List<Message> messageResults) {
+        if (properties.getConsumer().isLogEnabled()) {
+            messageResults.forEach(messageResult -> {
+                redisTemplate.boundListOps(KeyUtil.taskLogKey(messageResult.getGroupName(), messageResult.getQueueName())).rightPushAll(messageResult);
+                redisTemplate.expire(KeyUtil.taskLogKey(messageResult.getGroupName(), messageResult.getQueueName()), 7, TimeUnit.DAYS);
+            });
+        }
     }
 }

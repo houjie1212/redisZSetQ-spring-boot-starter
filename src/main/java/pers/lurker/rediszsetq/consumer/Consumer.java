@@ -1,32 +1,39 @@
 package pers.lurker.rediszsetq.consumer;
 
-import pers.lurker.rediszsetq.consumer.strategy.ThreadStrategy;
-import pers.lurker.rediszsetq.model.Message;
-import pers.lurker.rediszsetq.util.ClientUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisTemplate;
+import pers.lurker.rediszsetq.model.Message;
+import pers.lurker.rediszsetq.persistence.RedisZSetQService;
 
 import java.util.List;
 
 public class Consumer<T> {
 
-    private static final Logger log = LoggerFactory.getLogger(Consumer.class);
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisZSetQService redisZSetQService;
 
-    public Consumer(RedisTemplate<String, Object> redisTemplate) {
-        this.redisTemplate = redisTemplate;
+    public Consumer(RedisZSetQService redisZSetQService) {
+        this.redisZSetQService = redisZSetQService;
     }
 
-    public void ack(Message<T> message) {
-        redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), 0,
-                message);
+    /**
+     * 确认消费
+     * @param message
+     */
+    public Long ack(Message<T> message) {
+        return redisZSetQService.getByGroupName(message.getGroupName()).removeRunningMessage(message);
     }
 
-    public void ack(List<Message<T>> messages) {
-        messages.forEach(message ->
-                redisTemplate.opsForList().remove(ThreadStrategy.PROCESSING_TASKS_QNAME + ClientUtil.getClientName(),
-                        0, message));
+    /**
+     * 批量确认消费
+     * @param messages
+     */
+    public Long ack(List<Message<T>> messages) {
+        long result = 0L;
+        for (Message<T> message : messages) {
+            result += redisZSetQService.getByGroupName(message.getGroupName()).removeRunningMessage(message);
+        }
+        return result;
     }
 }

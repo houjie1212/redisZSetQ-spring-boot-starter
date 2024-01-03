@@ -4,10 +4,15 @@ import pers.lurker.rediszsetq.consumer.MessageListener;
 
 public interface ThreadStrategy<T> {
 
-    String PROCESSING_TASKS_QNAME = "ZSetQ-processing-tasks:";
-    String LOG_TASKS_QNAME = "ZSetQ-log-tasks:";
+    /**
+     * 启动消费线程
+     * @param queueName 队列名
+     * @param messageListener 客户端监听器
+     */
+    void start(String groupName, String queueName, MessageListener<T> messageListener);
 
-    void start(String queueName, MessageListener<T> messageListener);
-
+    /**
+     * 停止消费线程
+     */
     void stop();
 }

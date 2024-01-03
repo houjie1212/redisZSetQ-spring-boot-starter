@@ -1,16 +1,16 @@
 package pers.lurker.rediszsetq.util;
 
-import pers.lurker.rediszsetq.config.RedisZSetQConsumerProperties;
 import org.springframework.util.StringUtils;
+import pers.lurker.rediszsetq.config.RedisZSetQProperties;
 
 public class ClientUtil {
 
     private static String applicationName;
-    private static RedisZSetQConsumerProperties redisZSetQConsumerProperties;
+    private static RedisZSetQProperties redisZSetQProperties;
 
-    public ClientUtil(String applicationName, RedisZSetQConsumerProperties redisZSetQConsumerProperties) {
+    public ClientUtil(String applicationName, RedisZSetQProperties redisZSetQProperties) {
         ClientUtil.applicationName = applicationName;
-        ClientUtil.redisZSetQConsumerProperties = redisZSetQConsumerProperties;
+        ClientUtil.redisZSetQProperties = redisZSetQProperties;
     }
 
     /**
@@ -18,8 +18,8 @@ public class ClientUtil {
      * @return
      */
     public static String getClientName() {
-        if (StringUtils.hasText(redisZSetQConsumerProperties.getTimeoutCheckGroup())) {
-            return redisZSetQConsumerProperties.getTimeoutCheckGroup();
+        if (StringUtils.hasText(redisZSetQProperties.getConsumer().getTimeoutCheckGroup())) {
+            return redisZSetQProperties.getConsumer().getTimeoutCheckGroup();
         }
         if (StringUtils.hasText(applicationName)) {
             return applicationName;

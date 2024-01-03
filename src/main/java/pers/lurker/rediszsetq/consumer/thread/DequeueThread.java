@@ -5,9 +5,8 @@ import org.slf4j.LoggerFactory;
 
 public class DequeueThread extends Thread {
 
-    private static final Logger log = LoggerFactory.getLogger(DequeueThread.class);
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private boolean stopRequested = false;
     private final Runnable callback;
 
     public DequeueThread(Runnable callback) {
@@ -16,18 +15,14 @@ public class DequeueThread extends Thread {
 
     @Override
     public void run() {
-        while (!stopRequested && !isInterrupted()) {
+        while (!isInterrupted()) {
             try {
                 callback.run();
             } catch (Throwable t) {
                 //log.error("Exception while handling next queue item.", t);
             }
         }
-        log.debug("{} stopped", this.getName());
+        log.info("thread[{}] stopped", this.getName());
     }
 
-    public DequeueThread setStopRequested(boolean stopRequested) {
-        this.stopRequested = stopRequested;
-        return this;
-    }
 }

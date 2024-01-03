@@ -1,47 +1,78 @@
 package pers.lurker.rediszsetq.producer;
 
-import pers.lurker.rediszsetq.persistence.RedisZSetQOps;
-import pers.lurker.rediszsetq.model.Message;
+import cn.hutool.core.util.IdUtil;
 import org.springframework.util.Assert;
-
-import java.util.UUID;
+import org.springframework.util.StringUtils;
+import pers.lurker.rediszsetq.config.RedisZSetQProperties;
+import pers.lurker.rediszsetq.model.Message;
+import pers.lurker.rediszsetq.persistence.RedisZSetQService;
 
 public class MessageProducer {
 
-    private final int defaultPriority = 0;
-    private final int defaultExpire = 24 * 3600;
+    public final int DEFAULT_RETRY_COUNT = 0;
+    public final int DEFAULT_PRIORITY = 0;
 
-    private final RedisZSetQOps redisZSetQOps;
+    private final RedisZSetQProperties properties;
+    private final RedisZSetQService redisZSetQService;
 
-    public MessageProducer(RedisZSetQOps redisZSetQOps) {
-        this.redisZSetQOps = redisZSetQOps;
+    public MessageProducer(RedisZSetQProperties properties, RedisZSetQService redisZSetQService) {
+        this.properties = properties;
+        this.redisZSetQService = redisZSetQService;
     }
 
-    public <T> void sendMessage(String queueName, T payload, int priority, int expire, int consumerTimeout) {
+    /**
+     * @param queueName 队列名
+     * @param payload 消息内容
+     * @param priority 优先级
+     * @param consumerTimeout 消费超时时间
+     */
+    public <T> void sendMessage(String groupName, String queueName, T payload,
+        int priority, int retryCount, int consumerTimeout) {
         Assert.hasText(queueName, "队列名不能为空");
-        Message<T> message = Message.create(UUID.randomUUID().toString(), payload);
-        message.setQueueName(queueName)
-                .setPriority(priority)
-                .setExpire(expire)
-                .setConsumerTimeout(consumerTimeout);
-        redisZSetQOps.enqueue(queueName, message, priority, expire);
+        Message<T> message = Message.create(
+            IdUtil.getSnowflake(properties.getSnowflakeWorkerId()).nextIdStr(), payload);
+        message.setGroupName(groupName)
+            .setQueueName(queueName)
+            .setPriority(priority)
+            .setRetryCount(retryCount)
+            .setConsumerTimeout(consumerTimeout);
+        redisZSetQService.getByGroupName(groupName).enqueue(message, priority);
     }
 
-    public <T> void sendMessage(String queueName, T payload) {
-        sendMessage(queueName, payload, defaultPriority, defaultExpire, 0);
+    /**
+     * @param queueName 队列名
+     * @param payload 消息内容
+     */
+    public <T> void sendMessage(String groupName, String queueName, T payload) {
+        sendMessage(groupName, queueName, payload, DEFAULT_PRIORITY, DEFAULT_RETRY_COUNT, 0);
     }
 
-    public <T> void sendMessage(String queueName, T payload, int priority) {
-        sendMessage(queueName, payload, priority, defaultExpire, 0);
+    /**
+     * @param queueName 队列名
+     * @param payload 消息内容
+     * @param priority 优先级
+     */
+    public <T> void sendMessage(String groupName, String queueName, T payload, int priority) {
+        sendMessage(groupName, queueName, payload, priority, DEFAULT_RETRY_COUNT, 0);
     }
 
-    public <T> void sendMessage(String queueName, T payload, int priority, int expire) {
-        sendMessage(queueName, payload, priority, expire, 0);
+    /**
+     * @param queueName 队列名
+     * @param payload 消息内容
+     * @param priority 优先级
+     * @param retryCount 过期时间
+     */
+    public <T> void sendMessage(String groupName, String queueName, T payload, int priority, int retryCount) {
+        sendMessage(groupName, queueName, payload, priority, retryCount, 0);
     }
 
     public void sendMessage(Message message) {
         Assert.hasText(message.getQueueName(), "队列名不能为空");
-        redisZSetQOps.enqueue(message.getQueueName(), message, message.getPriority(), message.getExpire());
+        if (!StringUtils.hasText(message.getId())) {
+            message.setId(IdUtil.getSnowflake(properties.getSnowflakeWorkerId()).nextIdStr());
+        }
+        redisZSetQService.getByGroupName(message.getGroupName())
+            .enqueue(message, message.getPriority());
     }
 
 }

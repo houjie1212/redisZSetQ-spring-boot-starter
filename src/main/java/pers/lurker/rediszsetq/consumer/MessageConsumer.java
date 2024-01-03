@@ -8,29 +8,40 @@ import org.springframework.context.ApplicationContext;
 
 public class MessageConsumer<T> {
 
-    private static final Logger log = LoggerFactory.getLogger(MessageConsumer.class);
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final ApplicationContext applicationContext;
 
+    private String groupName;
     private String queueName;
     private MessageListener<T> messageListener;
-
     private ThreadStrategy threadStrategy;
 
     public MessageConsumer(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
     }
 
+    /**
+     * 初始化属性并启动
+     */
     public void init() {
         applicationContext.getAutowireCapableBeanFactory().autowireBean(threadStrategy);
         startConsumer();
     }
 
+    /**
+     * 启动消费线程
+     */
     public void startConsumer() {
         if (threadStrategy == null) {
             threadStrategy = new SingleThreadStrategy(1, 1);
         }
-        threadStrategy.start(queueName, messageListener);
+        threadStrategy.start(groupName, queueName, messageListener);
+    }
+
+    public MessageConsumer<T> setGroupName(String groupName) {
+        this.groupName = groupName;
+        return this;
     }
 
     public MessageConsumer setQueueName(String queueName) {

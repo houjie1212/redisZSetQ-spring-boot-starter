@@ -10,8 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.data.redis.RedisProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.context.EnvironmentAware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.data.redis.connection.*;
 import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
@@ -33,12 +36,14 @@ import java.util.List;
  */
 @Configuration("zsetQRedisConfig")
 @EnableConfigurationProperties(RedisProperties.class)
-public class RedisConfig {
+public class RedisConfig implements EnvironmentAware {
 
     private static final Logger log = LoggerFactory.getLogger(RedisConfig.class);
+    private Environment environment;
 
     @Bean("zsetQRedisConnectionFactory")
-    public RedisConnectionFactory redisConnectionFactory(RedisProperties redisProperties) {
+    public RedisConnectionFactory redisConnectionFactory() {
+        RedisProperties redisProperties = Binder.get(environment).bind("spring.redis", RedisProperties.class).get();
         RedisConfiguration redisConfiguration = getRedisConfiguration(redisProperties);
 
         RedisConnectionFactory redisConnectionFactory =  getLettuceConnectionFactory(redisProperties, redisConfiguration);;
@@ -53,11 +58,12 @@ public class RedisConfig {
 
     @Bean("zsetQRedisTemplate")
     public RedisTemplate<String, Object> redisTemplate(@Qualifier("zsetQRedisConnectionFactory") RedisConnectionFactory connectionFactory) {
-        log.debug("-----------> create zsetq redisTemplate bean...");
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
-        template.setKeySerializer(new StringRedisSerializer());
+        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+        template.setKeySerializer(stringRedisSerializer);
+        template.setHashKeySerializer(stringRedisSerializer);
 
         Jackson2JsonRedisSerializer<Object> redisSerializer = new Jackson2JsonRedisSerializer<>(Object.class);
         ObjectMapper mapper = new ObjectMapper();
@@ -65,8 +71,10 @@ public class RedisConfig {
         mapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY);
         redisSerializer.setObjectMapper(mapper);
         template.setValueSerializer(redisSerializer);
+        template.setHashValueSerializer(redisSerializer);
 
         template.afterPropertiesSet();
+        log.debug("-----------> create zsetq redisTemplate bean...{}", template);
         return template;
     }
 
@@ -224,5 +232,10 @@ public class RedisConfig {
                 .usePooling()
                 .poolConfig(jedisPoolConfig)
                 .build();
+    }
+
+    @Override
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
     }
 }

@@ -1,37 +1,41 @@
 package pers.lurker.rediszsetq.consumer.strategy;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.redis.core.BoundValueOperations;
+import org.springframework.data.redis.core.RedisTemplate;
+import pers.lurker.rediszsetq.config.RedisZSetQProperties;
 import pers.lurker.rediszsetq.consumer.Consumer;
 import pers.lurker.rediszsetq.consumer.MessageListener;
 import pers.lurker.rediszsetq.consumer.thread.DequeueThread;
 import pers.lurker.rediszsetq.model.Message;
-import pers.lurker.rediszsetq.model.MessageStatusRecord;
-import pers.lurker.rediszsetq.persistence.RedisZSetQOps;
-import pers.lurker.rediszsetq.util.ClientUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.data.redis.core.RedisTemplate;
+import pers.lurker.rediszsetq.persistence.RedisZSetQService;
+import pers.lurker.rediszsetq.util.DateUtil;
+import pers.lurker.rediszsetq.util.KeyUtil;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class SingleThreadStrategy implements ThreadStrategy {
 
-    private static final Logger log = LoggerFactory.getLogger(SingleThreadStrategy.class);
+    private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final int concurrency;
     private final int restTimeIfConsumeNull;
     private final List<DequeueThread> dequeueThreads;
 
-    @Autowired
-    private RedisZSetQOps redisZSetQOps;
-    @Autowired
+    @Resource
+    private RedisZSetQService redisZSetQService;
+    @Resource
     @Qualifier("zsetQRedisTemplate")
     private RedisTemplate<String, Object> redisTemplate;
-    @Autowired
+    @Resource
     private Consumer consumer;
+    @Resource
+    private RedisZSetQProperties properties;
 
     public SingleThreadStrategy(int concurrency, int restTimeIfConsumeNull) {
         this.concurrency = concurrency;
@@ -40,26 +44,24 @@ public class SingleThreadStrategy implements ThreadStrategy {
     }
 
     @Override
-    public void start(String queueName, MessageListener messageListener) {
+    public void start(String groupName, String queueName, MessageListener messageListener) {
         for (int i = 0; i < concurrency; i++) {
             DequeueThread dequeueThread = new DequeueThread(() -> {
-                Message messageResult = redisZSetQOps.dequeue(queueName);
+                Message messageResult = redisZSetQService.getByGroupName(groupName).dequeue(queueName);
                 try {
                     if (messageResult == null) {
                         TimeUnit.SECONDS.sleep(restTimeIfConsumeNull);
                     } else {
-                        // 放入记录队列，标记任务执行中
-                        MessageStatusRecord messageStatusRecord = saveProcessingTask(messageResult);
-                        // 记录日志
-                        saveLogTask(messageStatusRecord);
+                        saveRunningTask(messageResult);
+                        saveLogTask(messageResult);
 
-                        messageListener.onMessage(messageStatusRecord, consumer);
+                        messageListener.onMessage(messageResult, consumer);
                     }
                 } catch (InterruptedException e) {
-                    log.error(e.getMessage(), e);
+                    Thread.currentThread().interrupt();
                 }
             });
-            dequeueThread.setName(String.format("rediszsetq-consumer-single[%s]-%d", queueName, i));
+            dequeueThread.setName(String.format("rediszsetq-consumer-single[%s-%s]-%d", groupName, queueName, i));
             dequeueThread.start();
 
             dequeueThreads.add(dequeueThread);
@@ -68,19 +70,35 @@ public class SingleThreadStrategy implements ThreadStrategy {
 
     @Override
     public void stop() {
-        dequeueThreads.forEach(dequeueThread -> dequeueThread.setStopRequested(true));
+        dequeueThreads.forEach(Thread::interrupt);
         dequeueThreads.clear();
     }
 
-    private MessageStatusRecord saveProcessingTask(Message messageResult) {
-        MessageStatusRecord messageStatusRecord = new MessageStatusRecord(messageResult);
-        redisTemplate.opsForList().rightPush(PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), messageStatusRecord);
-        redisTemplate.expire(PROCESSING_TASKS_QNAME + ClientUtil.getClientName(), 1, TimeUnit.DAYS);
-        return messageStatusRecord;
+    /**
+     * 消息出队后，标记任务执行中，用于检查是否超时
+     * @param messageResult
+     * @return
+     */
+    private void saveRunningTask(Message messageResult) {
+        redisTemplate.boundListOps(KeyUtil.taskRunningKey(messageResult.getGroupName(), messageResult.getQueueName()))
+            .rightPush(messageResult.getId());
+
+        String statusKey = KeyUtil.taskStatusKeyPrefix(messageResult.getGroupName(), messageResult.getQueueName()) + messageResult.getId();
+        BoundValueOperations<String, Object> messageOps = redisTemplate.boundValueOps(statusKey);
+        Message message = (Message) messageOps.get();
+        message.setStatus(1)
+            .setConsumerStartTime(DateUtil.getNow());
+        messageOps.set(message);
     }
 
-    private void saveLogTask(MessageStatusRecord messageStatusRecord) {
-        redisTemplate.opsForList().rightPush(LOG_TASKS_QNAME + ClientUtil.getClientName(), messageStatusRecord);
-        redisTemplate.expire(LOG_TASKS_QNAME + ClientUtil.getClientName(), 7, TimeUnit.DAYS);
+    /**
+     * 记录日志
+     * @param messageResult
+     */
+    private void saveLogTask(Message messageResult) {
+        if (properties.getConsumer().isLogEnabled()) {
+            redisTemplate.boundListOps(KeyUtil.taskLogKey(messageResult.getGroupName(), messageResult.getQueueName())).rightPush(messageResult);
+            redisTemplate.expire(KeyUtil.taskLogKey(messageResult.getGroupName(), messageResult.getQueueName()), 7, TimeUnit.DAYS);
+        }
     }
 }
